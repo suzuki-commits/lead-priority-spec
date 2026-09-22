@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>問い合わせ優先度判定</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --blue: #0068b6;
+        --blue-soft: #e6f0f8;
+        --red: #fb4113;
+        --red-soft: #ffede7;
+        --ink: #221714;
+        --sub: #5b524f;
+        --line: #e3dedc;
+        --bg: #faf8f7;
+        --card: #ffffff;
+        --green: #1e7b4a;
+        --green-soft: #e5f3eb;
+        --amber: #a86400;
+        --amber-soft: #fff3de;
+        --code-bg: #1f1a18;
+        --code-fg: #f3eeec;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Noto Sans JP", system-ui, sans-serif;
+        line-height: 1.75;
+        font-size: 17px;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 0 16px;
+      }
+      header {
+        background: var(--ink);
+        color: #fff;
+        padding: 48px 0 40px;
+      }
+      header .kicker {
+        color: #ffb39f;
+        font-size: 13px;
+        letter-spacing: 0.12em;
+        font-weight: 500;
+      }
+      header h1 {
+        margin: 8px 0 12px;
+        font-size: clamp(26px, 4.5vw, 38px);
+        line-height: 1.3;
+      }
+      header p {
+        margin: 0;
+        color: #d9d1ce;
+        max-width: 680px;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      .pill {
+        font-size: 14px;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .pill.ok {
+        background: var(--green);
+      }
+      section {
+        padding: 40px 0 8px;
+      }
+      h2 {
+        font-size: 24px;
+        margin: 0 0 16px;
+        padding-left: 12px;
+        border-left: 5px solid var(--blue);
+      }
+      h3 {
+        font-size: 19px;
+        margin: 24px 0 8px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 20px 24px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+      }
+      .stat {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 16px 20px;
+      }
+      .stat b {
+        display: block;
+        font-size: 30px;
+        color: var(--blue);
+        line-height: 1.2;
+      }
+      .stat span {
+        font-size: 15px;
+        color: var(--sub);
+      }
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 520px;
+        font-size: 17px;
+      }
+      th,
+      td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        background: #f3efee;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      td.pt {
+        font-weight: 700;
+        white-space: nowrap;
+        color: var(--blue);
+      }
+      tr.new td {
+        background: var(--red-soft);
+      }
+      tr.new td.pt {
+        color: var(--red);
+      }
+      .tag {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+        margin-left: 6px;
+        vertical-align: 1px;
+      }
+      .tag.new {
+        background: var(--red);
+        color: #fff;
+      }
+      .prio {
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 6px;
+        font-size: 15px;
+        white-space: nowrap;
+      }
+      .HIGH {
+        background: var(--red-soft);
+        color: #c02f08;
+      }
+      .MEDIUM {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+      .LOW {
+        background: #eeeae9;
+        color: var(--sub);
+      }
+      .flow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0 0;
+      }
+      .flow .box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 16px;
+      }
+      .flow .arrow {
+        color: var(--sub);
+      }
+      code {
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 0.9em;
+        background: #f1ecea;
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+      pre {
+        margin: 0;
+        background: var(--code-bg);
+        color: var(--code-fg);
+        border-radius: 12px;
+        padding: 20px;
+        overflow-x: auto;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+        font-size: inherit;
+      }
+      .c {
+        color: #9c8f8b;
+      }
+      .k {
+        color: #ff9e7d;
+      }
+      .s {
+        color: #9fd8a8;
+      }
+      .n {
+        color: #8cc4f0;
+      }
+      .note {
+        background: var(--blue-soft);
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-size: 17px;
+      }
+      .note.warn {
+        background: var(--amber-soft);
+      }
+      ul.tight {
+        margin: 8px 0;
+        padding-left: 1.3em;
+      }
+      ul.tight li {
+        margin: 4px 0;
+      }
+      footer {
+        padding: 48px 0 40px;
+        color: var(--sub);
+        font-size: 13px;
+      }
+      .check {
+        color: var(--green);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <div class="kicker">COMIX ／ 営業オペレーション</div>
+        <h1>問い合わせ優先度判定<br />lead_priority 実装サマリ</h1>
+        <p>
+          生成AI活用支援・顧問への問い合わせを HIGH / MEDIUM / LOW
+          に振り分ける関数です。入力データの揺れに強くし、「2回目面談を取りに行く社」を上位に出す加点を加えました。
+        </p>
+        <div class="meta">
+          <span class="pill ok">テスト 19 / 19 合格</span>
+          <span class="pill">Python 3 標準ライブラリのみ</span>
+          <span class="pill">2026-09-23 更新</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section>
+        <h2>今回やったこと</h2>
+        <div class="grid">
+          <div class="stat">
+            <b>3件</b><span>入力で落ちる・誤判定するバグを修正</span>
+          </div>
+          <div class="stat"><b>+1</b><span>範囲表記「50〜99」に対応</span></div>
+          <div class="stat">
+            <b>+3点</b><span>初回面談済み・2回目未設定の加点を新設</span>
+          </div>
+          <div class="stat">
+            <b>19件</b><span>ユニットテストを追加（全件合格）</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>採点ルール</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>条件</th>
+                <th>加点</th>
+                <th>使う項目</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>従業員300名以上</td>
+                <td class="pt">+3</td>
+                <td><code>employees</code></td>
+              </tr>
+              <tr>
+                <td>従業員50名以上（300名未満）</td>
+                <td class="pt">+2</td>
+                <td><code>employees</code></td>
+              </tr>
+              <tr>
+                <td>デモ希望あり</td>
+                <td class="pt">+3</td>
+                <td><code>requested_demo</code></td>
+              </tr>
+              <tr>
+                <td>予算確認済み</td>
+                <td class="pt">+2</td>
+                <td><code>budget_confirmed</code></td>
+              </tr>
+              <tr class="new">
+                <td>
+                  初回面談済み・2回目未設定<span class="tag new">NEW</span>
+                </td>
+                <td class="pt">+3</td>
+                <td>
+                  <code>first_meeting_done</code><br /><code
+                    >second_meeting_scheduled</code
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td>直近7日以内（0〜7日）に接点あり</td>
+                <td class="pt">+1</td>
+                <td><code>days_since_contact</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>優先度の決まり方（最大12点）</h3>
+        <div class="flow">
+          <div class="box"><span class="prio HIGH">HIGH</span>　6点以上</div>
+          <div class="box"><span class="prio MEDIUM">MEDIUM</span>　3〜5点</div>
+          <div class="box"><span class="prio LOW">LOW</span>　0〜2点</div>
+        </div>
+        <p class="note" style="margin-top: 16px">
+          2回目面談の加点は、凍結期間中の
+          KPI「週あたりの2回目面談数」に合わせたものです。他の条件がなくても
+          MEDIUM になり、規模や接点が重なれば HIGH に上がります。
+        </p>
+      </section>
+
+      <section>
+        <h2>修正したバグ</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>修正前に起きていたこと</th>
+                <th>修正後</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>
+                  従業員数が空欄・<code>None</code>・<code>"300名"</code>
+                  だとエラーで停止
+                </td>
+                <td>数字を読み取り、読めなければ0名扱い</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>
+                  接点日数が
+                  <code>None</code> だとエラー。マイナス値も「直近」と誤判定
+                </td>
+                <td>読めなければ加点なし。0〜7日だけ加点</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>
+                  <code>"false"</code>・<code>"いいえ"</code>
+                  などの文字列でも加点されていた
+                </td>
+                <td>「true / 1 / yes / はい / 希望」だけを真とみなす</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>
+                  テストが <code>assert</code> で、<code>python -O</code>
+                  実行時に素通り
+                </td>
+                <td>unittest に移し、19件を常に検査</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>従業員数の読み取り例</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>入力</th>
+                <th>読み取った値</th>
+                <th>判定</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>"300名"</code> / <code>"300名以上"</code></td>
+                <td>300</td>
+                <td>+3</td>
+              </tr>
+              <tr>
+                <td><code>"約500名"</code> / <code>"1,200"</code></td>
+                <td>500 / 1200</td>
+                <td>+3</td>
+              </tr>
+              <tr>
+                <td><code>"50〜99"</code> / <code>"50-99名"</code></td>
+                <td>50（範囲は下限）</td>
+                <td>+2</td>
+              </tr>
+              <tr>
+                <td><code>"10〜49"</code></td>
+                <td>10</td>
+                <td>加点なし</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>None</code> / <code>""</code> / <code>"不明"</code> /
+                  <code>True</code>
+                </td>
+                <td>0（無視）</td>
+                <td>加点なし</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>判定例</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>問い合わせの状態</th>
+                <th>点数</th>
+                <th>優先度</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>500名・デモ希望・予算確認済み・2日前に接点</td>
+                <td class="pt">9</td>
+                <td><span class="prio HIGH">HIGH</span></td>
+              </tr>
+              <tr>
+                <td>80名・初回面談済み（2回目なし）・3日前に接点</td>
+                <td class="pt">6</td>
+                <td><span class="prio HIGH">HIGH</span></td>
+              </tr>
+              <tr>
+                <td>300名・デモ希望（予算未確認）</td>
+                <td class="pt">6</td>
+                <td><span class="prio HIGH">HIGH</span></td>
+              </tr>
+              <tr>
+                <td>初回面談済み（2回目なし）のみ</td>
+                <td class="pt">3</td>
+                <td><span class="prio MEDIUM">MEDIUM</span></td>
+              </tr>
+              <tr>
+                <td>初回面談済み・2回目設定済み</td>
+                <td class="pt">0</td>
+                <td><span class="prio LOW">LOW</span></td>
+              </tr>
+              <tr>
+                <td>5名・デモ希望なし・90日前に接点</td>
+                <td class="pt">0</td>
+                <td><span class="prio LOW">LOW</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>テスト結果</h2>
+        <div class="card">
+          <p style="margin: 0 0 8px">
+            <span class="check">✓ Ran 19 tests — OK</span>（WSL / Python 3
+            で実行）
+          </p>
+          <ul class="tight">
+            <li>元コードの2ケース（hot = HIGH・9点、cold = LOW・0点）</li>
+            <li>
+              従業員数：空欄・単位付き・カンマ・範囲表記・境界値（49 / 50 / 299
+              / 300）
+            </li>
+            <li>
+              接点日数：<code>None</code>・マイナス・境界値（0 / 7 / 8日）
+            </li>
+            <li>真偽値：文字列の true / false 各6パターン</li>
+            <li>
+              2回目面談：加点あり／設定済み／初回未実施／文字列入力／他条件と合算して
+              HIGH
+            </li>
+            <li>
+              優先度の閾値（2点 = LOW、3点 = MEDIUM、6点 = HIGH）と空データ
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>実装コード</h2>
+        <pre><code><span class="s">"""生成AI活用支援・顧問への問い合わせ優先度を決める。"""</span>
+
+<span class="k">import</span> re
+
+
+<span class="k">def</span> <span class="n">_to_int</span>(value, default):
+    <span class="c"># "300名" "約500名" "1,200" "50〜99"（範囲は下限）などから最初の整数を取り出す</span>
+    <span class="k">if</span> value <span class="k">is</span> None <span class="k">or</span> isinstance(value, bool):
+        <span class="k">return</span> default
+    match = re.search(<span class="s">r"-?\d+"</span>, str(value).replace(<span class="s">","</span>, <span class="s">""</span>))
+    <span class="k">return</span> int(match.group()) <span class="k">if</span> match <span class="k">else</span> default
+
+
+<span class="k">def</span> <span class="n">_to_bool</span>(value):
+    <span class="k">if</span> isinstance(value, str):
+        <span class="k">return</span> value.strip().lower() <span class="k">in</span> {<span class="s">"true"</span>, <span class="s">"1"</span>, <span class="s">"yes"</span>, <span class="s">"はい"</span>, <span class="s">"希望"</span>}
+    <span class="k">return</span> bool(value)
+
+
+<span class="k">def</span> <span class="n">lead_priority</span>(lead):
+    score, reasons = 0, []
+    employees = _to_int(lead.get(<span class="s">"employees"</span>), 0)
+    <span class="k">if</span> employees &gt;= 300:
+        score += 3
+        reasons.append(<span class="s">"従業員300名以上"</span>)
+    <span class="k">elif</span> employees &gt;= 50:
+        score += 2
+        reasons.append(<span class="s">"従業員50名以上"</span>)
+    <span class="k">if</span> _to_bool(lead.get(<span class="s">"requested_demo"</span>)):
+        score += 3
+        reasons.append(<span class="s">"デモ希望"</span>)
+    <span class="k">if</span> _to_bool(lead.get(<span class="s">"budget_confirmed"</span>)):
+        score += 2
+        reasons.append(<span class="s">"予算確認済み"</span>)
+    <span class="k">if</span> (_to_bool(lead.get(<span class="s">"first_meeting_done"</span>))
+            <span class="k">and not</span> _to_bool(lead.get(<span class="s">"second_meeting_scheduled"</span>))):
+        score += 3
+        reasons.append(<span class="s">"初回面談済み・2回目未設定"</span>)
+    days = _to_int(lead.get(<span class="s">"days_since_contact"</span>), 999)
+    <span class="k">if</span> 0 &lt;= days &lt;= 7:
+        score += 1
+        reasons.append(<span class="s">"直近7日以内の接点"</span>)
+    priority = <span class="s">"HIGH"</span> <span class="k">if</span> score &gt;= 6 <span class="k">else</span> <span class="s">"MEDIUM"</span> <span class="k">if</span> score &gt;= 3 <span class="k">else</span> <span class="s">"LOW"</span>
+    <span class="k">return</span> {<span class="s">"priority"</span>: priority, <span class="s">"score"</span>: score, <span class="s">"reasons"</span>: reasons}</code></pre>
+      </section>
+
+      <section>
+        <h2>今後の課題</h2>
+        <div class="note warn">
+          <ul class="tight" style="margin: 0">
+            <li>
+              まだ実データでは動かしていません。問い合わせデータに
+              <code>first_meeting_done</code> と
+              <code>second_meeting_scheduled</code> の値を入れる必要があります。
+            </li>
+            <li>
+              データの置き場所（Notion・スプレッドシートなど）が決まれば、読み込んで優先度一覧を出すところまで作れます。
+            </li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">株式会社コミクス ／ 社内資料（検索エンジン非公開）</div>
+    </footer>
+  </body>
+</html>
