@@ -279,7 +279,7 @@
           に振り分ける関数です。入力データの揺れに強くし、「2回目面談を取りに行く社」を上位に出す加点を加えました。
         </p>
         <div class="meta">
-          <span class="pill ok">テスト 19 / 19 合格</span>
+          <span class="pill ok">テスト 25 / 25 合格</span>
           <span class="pill">Python 3 標準ライブラリのみ</span>
           <span class="pill">2026-09-23 更新</span>
         </div>
@@ -291,14 +291,18 @@
         <h2>今回やったこと</h2>
         <div class="grid">
           <div class="stat">
-            <b>3件</b><span>入力で落ちる・誤判定するバグを修正</span>
+            <b>8件</b
+            ><span>入力で落ちる・誤判定するバグを修正（2回のレビュー）</span>
           </div>
-          <div class="stat"><b>+1</b><span>範囲表記「50〜99」に対応</span></div>
+          <div class="stat">
+            <b>日本語</b
+            ><span>「済み」「あり」「1.5万人」「50〜99」などの表記に対応</span>
+          </div>
           <div class="stat">
             <b>+3点</b><span>初回面談済み・2回目未設定の加点を新設</span>
           </div>
           <div class="stat">
-            <b>19件</b><span>ユニットテストを追加（全件合格）</span>
+            <b>25件</b><span>ユニットテストを追加（全件合格）</span>
           </div>
         </div>
       </section>
@@ -337,13 +341,15 @@
               </tr>
               <tr class="new">
                 <td>
-                  初回面談済み・2回目未設定<span class="tag new">NEW</span>
+                  初回面談済み・2回目が予定も実施もなし<span class="tag new"
+                    >NEW</span
+                  >
                 </td>
                 <td class="pt">+3</td>
                 <td>
                   <code>first_meeting_done</code><br /><code
                     >second_meeting_scheduled</code
-                  >
+                  ><br /><code>second_meeting_done</code>
                 </td>
               </tr>
               <tr>
@@ -402,7 +408,7 @@
                   <code>"false"</code>・<code>"いいえ"</code>
                   などの文字列でも加点されていた
                 </td>
-                <td>「true / 1 / yes / はい / 希望」だけを真とみなす</td>
+                <td>「はい」と「いいえ」を判定する表を用意（下の表を参照）</td>
               </tr>
               <tr>
                 <td>4</td>
@@ -410,7 +416,42 @@
                   テストが <code>assert</code> で、<code>python -O</code>
                   実行時に素通り
                 </td>
-                <td>unittest に移し、19件を常に検査</td>
+                <td>unittest に移し、25件を常に検査</td>
+              </tr>
+              <tr class="new">
+                <td>5<span class="tag new">NEW</span></td>
+                <td>
+                  <code>"済み"</code
+                  >・<code>"あり"</code>・<code>"○"</code>・<code
+                    >"希望する"</code
+                  >
+                  が「いいえ」扱いになり、初回面談済みの社に加点されなかった
+                </td>
+                <td>「済・あり・有・○・✓・希望・実施」を含めば「はい」</td>
+              </tr>
+              <tr class="new">
+                <td>6<span class="tag new">NEW</span></td>
+                <td>2回目面談が終わって予定欄が空の社にも +3 がついていた</td>
+                <td>
+                  <code>second_meeting_done</code>
+                  を追加。2回目が予定済みか実施済みなら加点しない
+                </td>
+              </tr>
+              <tr class="new">
+                <td>7<span class="tag new">NEW</span></td>
+                <td>
+                  <code>"1，200"</code>（全角カンマ）や
+                  <code>"1.5万人"</code> が1名と読まれた
+                </td>
+                <td>全角を半角にそろえ、「万」「千」の単位に対応</td>
+              </tr>
+              <tr class="new">
+                <td>8<span class="tag new">NEW</span></td>
+                <td>
+                  全角マイナスの
+                  <code>"－3"</code> 日が「直近の接点」として加点された
+                </td>
+                <td>全角マイナスも半角に直してから読む（加点なし）</td>
               </tr>
             </tbody>
           </table>
@@ -433,8 +474,19 @@
                 <td>+3</td>
               </tr>
               <tr>
-                <td><code>"約500名"</code> / <code>"1,200"</code></td>
-                <td>500 / 1200</td>
+                <td>
+                  <code>"約500名"</code> / <code>"1,200"</code> /
+                  <code>"1，200"</code>
+                </td>
+                <td>500 / 1200 / 1200</td>
+                <td>+3</td>
+              </tr>
+              <tr class="new">
+                <td>
+                  <code>"1.5万人"</code> / <code>"約3千名"</code> /
+                  <code>"５００名"</code>
+                </td>
+                <td>15000 / 3000 / 500</td>
                 <td>+3</td>
               </tr>
               <tr>
@@ -458,6 +510,44 @@
             </tbody>
           </table>
         </div>
+
+        <h3>「はい / いいえ」の読み取り例</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>判定</th>
+                <th>入力の例</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="prio HIGH">はい</span></td>
+                <td>
+                  <code>True</code> / <code>"true"</code> / <code>"1"</code> /
+                  <code>"yes"</code> / <code>"はい"</code> /
+                  <code>"済み"</code> / <code>"実施済み"</code> /
+                  <code>"あり"</code> / <code>"有り"</code> / <code>"○"</code> /
+                  <code>"✓"</code> / <code>"希望する"</code>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="prio LOW">いいえ</span></td>
+                <td>
+                  <code>False</code> / 空欄 / <code>"false"</code> /
+                  <code>"0"</code> / <code>"いいえ"</code> /
+                  <code>"なし"</code> / <code>"未"</code> /
+                  <code>"未実施"</code> / <code>"希望しない"</code> /
+                  <code>"ありません"</code> / <code>"不要"</code> /
+                  <code>"不明"</code> / <code>"×"</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note" style="margin-top: 16px">
+          「未」「不」で始まる語と、「しない」「なし」「ません」で終わる語は、先に「いいえ」と判定します。そのため「未実施」が「実施」に、「ありません」が「あり」に引っ張られることはありません。
+        </p>
       </section>
 
       <section>
@@ -498,6 +588,11 @@
                 <td><span class="prio LOW">LOW</span></td>
               </tr>
               <tr>
+                <td>初回「済み」・2回目「実施済み」（予定欄は空）</td>
+                <td class="pt">0</td>
+                <td><span class="prio LOW">LOW</span></td>
+              </tr>
+              <tr>
                 <td>5名・デモ希望なし・90日前に接点</td>
                 <td class="pt">0</td>
                 <td><span class="prio LOW">LOW</span></td>
@@ -511,21 +606,22 @@
         <h2>テスト結果</h2>
         <div class="card">
           <p style="margin: 0 0 8px">
-            <span class="check">✓ Ran 19 tests — OK</span>（WSL / Python 3
+            <span class="check">✓ Ran 25 tests — OK</span>（WSL / Python 3
             で実行）
           </p>
           <ul class="tight">
             <li>元コードの2ケース（hot = HIGH・9点、cold = LOW・0点）</li>
             <li>
-              従業員数：空欄・単位付き・カンマ・範囲表記・境界値（49 / 50 / 299
-              / 300）
+              従業員数：空欄・単位付き・カンマ・範囲表記・全角数字と全角カンマ・「万」「千」・境界値（49
+              / 50 / 299 / 300）
             </li>
             <li>
-              接点日数：<code>None</code>・マイナス・境界値（0 / 7 / 8日）
+              接点日数：<code>None</code>・マイナス・全角マイナス・全角数字・境界値（0
+              / 7 / 8日）
             </li>
-            <li>真偽値：文字列の true / false 各6パターン</li>
+            <li>はい / いいえ：英語6＋6パターン、日本語10＋12パターン</li>
             <li>
-              2回目面談：加点あり／設定済み／初回未実施／文字列入力／他条件と合算して
+              2回目面談：加点あり／予定済み／実施済み／初回未実施／文字列入力／他条件と合算して
               HIGH
             </li>
             <li>
@@ -540,20 +636,39 @@
         <pre><code><span class="s">"""生成AI活用支援・顧問への問い合わせ優先度を決める。"""</span>
 
 <span class="k">import</span> re
+<span class="k">import</span> unicodedata
+
+_UNITS = {<span class="s">"万"</span>: 10000, <span class="s">"千"</span>: 1000}
+_FALSE_WORDS = {<span class="s">""</span>, <span class="s">"false"</span>, <span class="s">"0"</span>, <span class="s">"no"</span>, <span class="s">"n"</span>, <span class="s">"いいえ"</span>, <span class="s">"なし"</span>, <span class="s">"無"</span>, <span class="s">"×"</span>, <span class="s">"x"</span>, <span class="s">"-"</span>, <span class="s">"不要"</span>}
+_TRUE_WORDS = {<span class="s">"true"</span>, <span class="s">"1"</span>, <span class="s">"yes"</span>, <span class="s">"y"</span>, <span class="s">"はい"</span>}
+_TRUE_MARKS = (<span class="s">"済"</span>, <span class="s">"あり"</span>, <span class="s">"有"</span>, <span class="s">"○"</span>, <span class="s">"◯"</span>, <span class="s">"✓"</span>, <span class="s">"✔"</span>, <span class="s">"希望"</span>, <span class="s">"実施"</span>)
+
+
+<span class="k">def</span> <span class="n">_normalize</span>(value):
+    <span class="c"># 全角数字・全角カンマ・全角マイナスを半角にそろえる</span>
+    <span class="k">return</span> unicodedata.normalize(<span class="s">"NFKC"</span>, str(value)).strip().lower()
 
 
 <span class="k">def</span> <span class="n">_to_int</span>(value, default):
-    <span class="c"># "300名" "約500名" "1,200" "50〜99"（範囲は下限）などから最初の整数を取り出す</span>
+    <span class="c"># "300名" "約500名" "1,200" "1.5万人" "50〜99"（範囲は下限）などから最初の数を取り出す</span>
     <span class="k">if</span> value <span class="k">is</span> None <span class="k">or</span> isinstance(value, bool):
         <span class="k">return</span> default
-    match = re.search(<span class="s">r"-?\d+"</span>, str(value).replace(<span class="s">","</span>, <span class="s">""</span>))
-    <span class="k">return</span> int(match.group()) <span class="k">if</span> match <span class="k">else</span> default
+    text = _normalize(value).replace(<span class="s">","</span>, <span class="s">""</span>)
+    match = re.search(<span class="s">r"(-?\d+(?:\.\d+)?)\s*([万千]?)"</span>, text)
+    <span class="k">if</span> <span class="k">not</span> match:
+        <span class="k">return</span> default
+    <span class="k">return</span> int(float(match.group(1)) * _UNITS.get(match.group(2), 1))
 
 
 <span class="k">def</span> <span class="n">_to_bool</span>(value):
-    <span class="k">if</span> isinstance(value, str):
-        <span class="k">return</span> value.strip().lower() <span class="k">in</span> {<span class="s">"true"</span>, <span class="s">"1"</span>, <span class="s">"yes"</span>, <span class="s">"はい"</span>, <span class="s">"希望"</span>}
-    <span class="k">return</span> bool(value)
+    <span class="k">if</span> <span class="k">not</span> isinstance(value, str):
+        <span class="k">return</span> bool(value)
+    text = _normalize(value)
+    <span class="c"># 「未実施」「希望しない」「ありません」を先に否定として扱う</span>
+    <span class="k">if</span> (text <span class="k">in</span> _FALSE_WORDS <span class="k">or</span> text.startswith((<span class="s">"未"</span>, <span class="s">"不"</span>))
+            <span class="k">or</span> text.endswith((<span class="s">"しない"</span>, <span class="s">"なし"</span>, <span class="s">"ません"</span>))):
+        <span class="k">return</span> False
+    <span class="k">return</span> text <span class="k">in</span> _TRUE_WORDS <span class="k">or</span> any(mark <span class="k">in</span> text for mark <span class="k">in</span> _TRUE_MARKS)
 
 
 <span class="k">def</span> <span class="n">lead_priority</span>(lead):
@@ -571,8 +686,9 @@
     <span class="k">if</span> _to_bool(lead.get(<span class="s">"budget_confirmed"</span>)):
         score += 2
         reasons.append(<span class="s">"予算確認済み"</span>)
-    <span class="k">if</span> (_to_bool(lead.get(<span class="s">"first_meeting_done"</span>))
-            <span class="k">and not</span> _to_bool(lead.get(<span class="s">"second_meeting_scheduled"</span>))):
+    second_meeting_set = (_to_bool(lead.get(<span class="s">"second_meeting_scheduled"</span>))
+                          <span class="k">or</span> _to_bool(lead.get(<span class="s">"second_meeting_done"</span>)))
+    <span class="k">if</span> _to_bool(lead.get(<span class="s">"first_meeting_done"</span>)) <span class="k">and</span> <span class="k">not</span> second_meeting_set:
         score += 3
         reasons.append(<span class="s">"初回面談済み・2回目未設定"</span>)
     days = _to_int(lead.get(<span class="s">"days_since_contact"</span>), 999)
@@ -589,8 +705,19 @@
           <ul class="tight" style="margin: 0">
             <li>
               まだ実データでは動かしていません。問い合わせデータに
-              <code>first_meeting_done</code> と
-              <code>second_meeting_scheduled</code> の値を入れる必要があります。
+              <code>first_meeting_done</code
+              >・<code>second_meeting_scheduled</code>・<code
+                >second_meeting_done</code
+              >
+              の値を入れる必要があります。
+            </li>
+            <li>
+              満点が12点に増えた一方、HIGH の基準は6点のままです。実データで
+              HIGH が多すぎるなら、基準を7点に上げることを検討します。
+            </li>
+            <li>
+              <code>"～300名"</code
+              >（300名まで、の意味）は300名として読みます。上限の意味で書かれるデータが多い場合は扱いを見直します。
             </li>
             <li>
               データの置き場所（Notion・スプレッドシートなど）が決まれば、読み込んで優先度一覧を出すところまで作れます。
